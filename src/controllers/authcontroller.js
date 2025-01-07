@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import pool from "../config.js";
 
 const register = async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password } = req.body; //Desestructuramos de req.body el username, email y password
 
   try {
     // Verificar si el usuario ya existe
@@ -19,21 +19,16 @@ const register = async (req, res) => {
 
     // Insertar nuevo usuario
     const newUser = await pool.query(
-      "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email",
+      "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING user_id, username, email",
       [username, email, hashedPassword]
     );
 
     const user = newUser.rows[0];
 
-    // Crear token JWT
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRATION,
-    });
-
-    res.status(201).json({ token, user });
+    res.status(201).json({ message: "User registered successfully", user });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: err });
   }
 };
 
@@ -50,7 +45,7 @@ const login = async (req, res) => {
     }
 
     const user = result.rows[0];
-
+    console.log(user);
     // Verificar la contraseña
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
@@ -58,7 +53,7 @@ const login = async (req, res) => {
     }
 
     // Crear token JWT
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ user_id: user.user_id }, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRATION,
     });
 
